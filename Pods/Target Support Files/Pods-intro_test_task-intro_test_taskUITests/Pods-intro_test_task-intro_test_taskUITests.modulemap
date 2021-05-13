@@ -1,0 +1,6 @@
+framework module Pods_intro_test_task_intro_test_taskUITests {
+  umbrella header "Pods-intro_test_task-intro_test_taskUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
