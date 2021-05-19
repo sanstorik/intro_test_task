@@ -37,69 +37,75 @@ class OverviewLogicControllerTests: XCTestCase {
     pagination.delegate = logicController
   }
   
-  func testInitialLoad() {
+  func testReloadingListOnLoad() {
     
-    var loaderCalls = [Bool]()
+    // Given
     
-    view.didShowLoader = {
-      loaderCalls.append($0)
+    var loaderTypes = [PaginationProvider.LoadingType]()
+    
+    view.didReloadList = {
+      loaderTypes.append($0)
     }
     
-    let reload = expectation(description: "reload")
-    view.didReloadList = { type in
-      reload.fulfill()
-      
-      switch type {
-      case .pagination:
-        assertionFailure()
-      default:
-        break
-      }
-    }
+    // When
     
     logicController.loadInitialArtObjects()
+    _ = pagination.loadNextPageIfNeededFor(itemIndex: 2)
+    
+    // Then
+    
+    XCTAssertEqual(loaderTypes, [.full, .pagination(newElementsCount: 1)])
+  }
+  
+  func testAddingInitialNewElements() {
+    
+    // When
+    
+    logicController.loadInitialArtObjects()
+    
+    // Then
+    
     XCTAssertEqual(dataSource.objects.count, 1)
     XCTAssertEqual(dataSource.objects.last?.title, "1")
-    XCTAssertEqual(loaderCalls, [true, false])
-    
-    wait(for: [reload], timeout: 0.1)
   }
   
-  func testInitialLoadError() {
-    /* Empty */
-  }
-  
-  func testInitialEmptyState() {
-    /* Empty */
-  }
-  
-  func testPaginationCall() throws {
-    let reload = expectation(description: "called reload")
-    view.didReloadList = { type in
-      switch type {
-      case .full:
-        assertionFailure()
-      case .pagination(let newElements):
-        XCTAssertEqual(newElements, 1)
-      }
-      
-      reload.fulfill()
-    }
+  func testAddingPaginationNewElements() {
     
-    let hideError = expectation(description: "hide error")
-    view.didHideErrorState = {
-      hideError.fulfill()
-    }
+    // Given
     
-    _ = pagination.loadNextPageIfNeededFor(itemIndex: 2)
+    let nextPageIndex = pagination.currentPage + 1
+    
+    // When
+    
+    _ = pagination.loadNextPageIfNeededFor(itemIndex: nextPageIndex)
+    
+    // Then
+    
     XCTAssertEqual(dataSource.objects.count, 2)
-    XCTAssertEqual(dataSource.objects.last?.title, "2")
-    
-    wait(for: [reload, hideError], timeout: 0.1)
+    XCTAssertEqual(dataSource.objects.last?.title, String(nextPageIndex))
   }
   
-  func testPaginationErrorCall() throws {
-    /* Empty */
+  func testHidingErrorStateOnLoad() {
+    
+    // Given
+    
+    let nextPageIndex = pagination.currentPage + 1
+    let hideErrorCall = expectation(description: "hide error")
+    hideErrorCall.expectedFulfillmentCount = 2
+    
+    view.didHideErrorState = {
+      hideErrorCall.fulfill()
+    }
+    
+    // When
+    
+    logicController.loadInitialArtObjects()
+    _ = pagination.loadNextPageIfNeededFor(itemIndex: nextPageIndex)
+    
+    // Then
+    
+    wait(for: [hideErrorCall], timeout: 0.1)
+    
   }
 }
 

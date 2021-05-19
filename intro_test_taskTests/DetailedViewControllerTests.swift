@@ -20,24 +20,39 @@ class DetailedViewControllerTests: XCTestCase {
     logicController = LogicControllerMock()
   }
   
-  func testSettingInitialData() {
+  func testLoadingImage() {
     
-    let viewModel = DetailedObjectViewModel(location: "location",
-                                            titles: ["one", "two"],
-                                            authors: ["a1", "a2"],
-                                            webImage: .init(guid: "guid", url: "url"),
-                                            objectNumber: "number")
+    // Given
     
-    logicController.viewModel = viewModel
-    
-    let didSetImage = expectation(description: "image")
-    imageDownloader.didSetImage = { url, _ in
-      didSetImage.fulfill()
-      XCTAssertEqual(url, viewModel.webImage?.url)
+    let viewModel = getViewModel()
+    logicController.loadDetailedObject = { [weak logicController] in
+      logicController?.view?.displayObject(viewModel)
     }
+    
+    var setImageUrl: String?
+    
+    imageDownloader.didSetImage = { url, _ in
+      setImageUrl = url
+    }
+    
+    // When
     
     let vc = createViewController(image: viewModel.webImage)
     vc.loadViewIfNeeded()
+    
+    // Then
+    
+    XCTAssertEqual(setImageUrl, viewModel.webImage?.url)
+  }
+  
+  func testCreatingPropeLabels() {
+    
+    // Given
+    
+    let viewModel = getViewModel()
+    logicController.loadDetailedObject = { [weak logicController] in
+      logicController?.view?.displayObject(viewModel)
+    }
     
     let expectedTitles = [
       viewModel.objectNumber,
@@ -47,6 +62,13 @@ class DetailedViewControllerTests: XCTestCase {
       viewModel.authors[0],
       viewModel.authors[1]
     ]
+    
+    // When
+    
+    let vc = createViewController(image: viewModel.webImage)
+    vc.loadViewIfNeeded()
+    
+    // Then
     
     guard vc.dataStackView.arrangedSubviews.count == 1 + expectedTitles.count else {
       assertionFailure()
@@ -58,8 +80,47 @@ class DetailedViewControllerTests: XCTestCase {
     for i in 1..<vc.dataStackView.arrangedSubviews.count {
       XCTAssertEqual((vc.dataStackView.arrangedSubviews[i] as? UILabel)?.text, expectedTitles[i - 1])
     }
+  }
+  
+  func testShowingErrorState() {
     
-    wait(for: [didSetImage], timeout: 0.1)
+    // Given
+    
+    logicController.loadDetailedObject = { [weak logicController] in
+      logicController?.view?.showError(true)
+    }
+    
+    // When
+    
+    let vc = createViewController(image: nil)
+    vc.loadViewIfNeeded()
+    
+    // Then
+    
+    XCTAssertTrue(vc.isShowingEmptyView())
+  }
+  
+  func testInitialErrorState() {
+    
+    // When
+    
+    let vc = createViewController(image: nil)
+    vc.loadViewIfNeeded()
+    
+    // Then
+    
+    XCTAssertFalse(vc.isShowingEmptyView())
+  }
+  
+  // MARK: - Helper methods
+  
+  private func getViewModel() -> DetailedObjectViewModel {
+    
+    return DetailedObjectViewModel(location: "location",
+                                   titles: ["one", "two"],
+                                   authors: ["a1", "a2"],
+                                   webImage: .init(guid: "guid", url: "url"),
+                                   objectNumber: "number")
   }
   
   private func createViewController(image: WebImage?) -> DetailedArtObjectViewController {
@@ -72,10 +133,10 @@ class DetailedViewControllerTests: XCTestCase {
 }
 
 private class LogicControllerMock: DetailedArtObjectLogicControllerProtocol {
-  var view: DetailedArtObjectView?
-  var viewModel: DetailedObjectViewModel!
+  weak var view: DetailedArtObjectView?
+  var loadDetailedObject: (() -> Void)?
   
   func loadDetailedArtObjectFor(artObject: ArtObject) {
-    view?.displayObject(viewModel)
+    loadDetailedObject?()
   }
 }

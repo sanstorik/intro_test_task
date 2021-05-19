@@ -14,32 +14,71 @@ class PaginationTests: XCTestCase {
   var paginationProvider: PaginationProvider!
   fileprivate var delegate: PaginationProviderDelegateMock!
   
-  func testSequence() {
+  func testFinishingLoadingNextPage() {
+    
+    // Given
+    
+    let newElementsCount = 20
     setupProvider(options: .default)
     
-    delegate.paginationLoadBatch = 20
-    
-    XCTAssertFalse(paginationProvider.isRequestRunning)
-    delegate.loadingNext = {
-      XCTAssertTrue(self.paginationProvider.isRequestRunning)
-    }
-    
+    delegate.paginationLoadBatch = newElementsCount
     let didEndPagination = expectation(description: "pagination finish")
+    
+    var loadedElementsCount: Int?
     delegate.didEndPagination = { elements in
-      XCTAssertEqual(elements, 20)
       didEndPagination.fulfill()
+      loadedElementsCount = elements
     }
     
-    XCTAssertTrue(paginationProvider.loadNextPageIfNeededFor(itemIndex: 16))
+    // When
+    
+    let isPaginationNeeded = paginationProvider.loadNextPageIfNeededFor(itemIndex: 16)
+    
+    // Then
+    
     wait(for: [didEndPagination], timeout: 0.1)
+    XCTAssertTrue(isPaginationNeeded)
+    XCTAssertEqual(loadedElementsCount, newElementsCount)
   }
   
-  func testLastSequence() {
-    setupProvider(options: .default)
+  func testRunningPaginationProperties() {
     
+    // Given
+    
+    setupProvider(options: .default)
+    let initialRunningState = paginationProvider.isRequestRunning
+    var loadingState = false
+      
+    delegate.loadingNext = {
+      loadingState = self.paginationProvider.isRequestRunning
+    }
+    
+    // When
+   
+    _ = paginationProvider.loadNextPageIfNeededFor(itemIndex: 16)
+    
+    // Then
+    
+    XCTAssertFalse(initialRunningState)
+    XCTAssertFalse(paginationProvider.didEndPagination)
+    XCTAssertTrue(loadingState)
+  }
+  
+  func testLastPaginationProperties() {
+    
+    // Given
+    
+    setupProvider(options: .default)
     delegate.paginationLoadBatch = 15
+    let initialState = paginationProvider.didEndPagination
+    
+    // When
     
     _ = paginationProvider.loadNextPageIfNeededFor(itemIndex: 16)
+    
+    // Then
+    
+    XCTAssertFalse(initialState)
     XCTAssertTrue(paginationProvider.didEndPagination)
   }
   

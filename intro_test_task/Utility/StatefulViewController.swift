@@ -29,6 +29,10 @@ class StatefulViewController: UIViewController {
     view.bringSubviewToFront(holder)
   }
   
+  func isShowingEmptyView() -> Bool {
+    return !holder.isHidden
+  }
+  
   // MARK: - Private methods
   
   private func setupViews() {

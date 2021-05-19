@@ -47,7 +47,7 @@ extension ArtObjectsService: TargetType {
   }
   
   var serviceKeyParams: [String: Any] {
-    return ["key": /* insert your API key here*/ ""]
+    return ["key": ""]
   }
   
   var sampleData: Data {

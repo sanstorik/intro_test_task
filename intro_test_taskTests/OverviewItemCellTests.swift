@@ -21,21 +21,24 @@ class OverviewItemCellTests: XCTestCase {
     cell.imageDownloader = imageDownloader
   }
   
-  func testViewModel() {
+  func testSettingViewModel() {
+    
+    // Given
     
     let viewModel = OverviewViewModel(title: "title", author: "author", imageUrl: "url")
-    let imageCall = expectation(description: "image")
-    
+    var setImageUrl: String?
     imageDownloader.didSetImage = { url, _ in
-      imageCall.fulfill()
-      XCTAssertEqual(url, viewModel.imageUrl)
+      setImageUrl = url
     }
+    
+    // When
     
     cell.setViewModel(viewModel)
     
+    // Then
+    
     XCTAssertEqual(cell.titleLabel.text, viewModel.title)
     XCTAssertEqual(cell.authorLabel.text, viewModel.author)
-    
-    wait(for: [imageCall], timeout: 0.1)
+    XCTAssertEqual(setImageUrl, viewModel.imageUrl)
   }
 }

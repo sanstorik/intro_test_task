@@ -84,8 +84,19 @@ final class PaginationProvider {
 
 extension PaginationProvider {
   
-  enum LoadingType {
+  enum LoadingType: Equatable {
     case full
     case pagination(newElementsCount: Int)
+    
+    static func == (lhs: LoadingType, rhs: LoadingType) -> Bool {
+      switch (lhs, rhs) {
+      case (.full, .full):
+        return true
+      case (.pagination(let lhsElements), .pagination(let rhsElements)):
+        return lhsElements == rhsElements
+      default:
+        return false
+      }
+    }
   }
 }
