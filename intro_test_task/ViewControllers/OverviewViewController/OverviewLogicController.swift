@@ -50,6 +50,10 @@ final class OverviewLogicController: OverviewLogicControllerProtocol {
         return
       }
       
+      defer {
+        self.view?.showLoader(false)
+      }
+      
       switch result {
       case .success(let response):
         guard response.count > 0 else {
@@ -63,8 +67,6 @@ final class OverviewLogicController: OverviewLogicControllerProtocol {
       case .failure:
         self.view?.showErrorState(type: .full)
       }
-      
-      self.view?.showLoader(false)
     }
   }
   
